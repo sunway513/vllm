@@ -6,10 +6,11 @@ vLLM initially supports basic model inference and serving on Intel GPU platform.
 # --8<-- [start:requirements]
 
 - Supported Hardware: Intel Data Center GPU, Intel ARC GPU
-- OneAPI requirements: oneAPI 2025.1
+- OneAPI requirements: oneAPI 2025.3
+- Dependency: [vllm-xpu-kernels](https://github.com/vllm-project/vllm-xpu-kernels): a package provide all necessary vllm custom kernel when running vLLM on Intel GPU platform, 
 - Python: 3.12
 !!! warning
-    The provided IPEX whl is Python3.12 specific so this version is a MUST.
+    The provided vllm-xpu-kernels whl is Python3.12 specific so this version is a MUST.
 
 # --8<-- [end:requirements]
 # --8<-- [start:set-up-using-python]
@@ -24,7 +25,7 @@ Currently, there are no pre-built XPU wheels.
 # --8<-- [end:pre-built-wheels]
 # --8<-- [start:build-wheel-from-source]
 
-- First, install required [driver](https://dgpu-docs.intel.com/driver/installation.html#installing-gpu-drivers) and [Intel OneAPI](https://www.intel.com/content/www/us/en/developer/tools/oneapi/base-toolkit.html) 2025.1 or later.
+- First, install required [driver](https://dgpu-docs.intel.com/driver/installation.html#installing-gpu-drivers) and [Intel OneAPI](https://www.intel.com/content/www/us/en/developer/tools/oneapi/base-toolkit.html) 2025.3 or later.
 - Second, install Python packages for vLLM XPU backend building:
 
 ```bash
@@ -34,10 +35,23 @@ pip install --upgrade pip
 pip install -v -r requirements/xpu.txt
 ```
 
-- Then, build and install vLLM XPU backend:
+- Then, install the correct Triton package for Intel XPU.
+
+    The default `triton` package (for NVIDIA GPUs) may be installed as a transitive dependency (e.g., via `xgrammar`). For Intel XPU, you must replace it with `triton-xpu`:
+
+    ```bash
+    pip uninstall -y triton triton-xpu
+    pip install triton-xpu==3.6.0 --extra-index-url https://download.pytorch.org/whl/xpu
+    ```
+
+    !!! note
+        - `triton` (without suffix) is for NVIDIA GPUs only. On XPU, using it instead of `triton-xpu` can cause correctness or runtime issues.
+        - For torch 2.10 (the version used in `requirements/xpu.txt`), the matching package is `triton-xpu==3.6.0`. If you use a different version of torch, check the corresponding `triton-xpu` version in [docker/Dockerfile.xpu](https://github.com/vllm-project/vllm/blob/main/docker/Dockerfile.xpu).
+
+- Finally, build and install vLLM XPU backend:
 
 ```bash
-VLLM_TARGET_DEVICE=xpu python setup.py install
+VLLM_TARGET_DEVICE=xpu pip install --no-build-isolation -e . -v
 ```
 
 # --8<-- [end:build-wheel-from-source]
